@@ -69,9 +69,8 @@ inline bool isNumber(const QString &rhs)
 }
 inline bool isOp(const QChar &rhs)
 {
-    char x = rhs.toLatin1();
     for (int i = 0; i < 8; ++i)
-        if (x == op[i])
+        if (rhs == op[i])
             return true;
     return false;
 }
@@ -157,13 +156,22 @@ QList<Element> infixExpressionSeperator(const QString &rhs)
     {
         if (isOp(rhs[i]))
         {
-            if (now_val.isEmpty())
+            if (now_val.isEmpty() && rhs[i] != '(' && (i >= 1 ? rhs[i - 1] != ')' : 1))
+            {
                 throw BadArgument();
+            }
             if (rhs[i].toLatin1() == '(')
+            {
                 ++bracketsDelta;
+                ret << Element(0.0, rhs[i]);
+                continue;
+            }
             if (rhs[i].toLatin1() == ')')
+            {
                 --bracketsDelta;
-            ret << Element(now_val.toDouble(), QChar(0)) << Element(0.0, rhs[i]);
+            }
+            if (!now_val.isEmpty() || (i >= 1 ? rhs[i - 1] != ')' : 0) || rhs[i] != '(')
+                ret << Element(now_val.toDouble(), QChar(0)) << Element(0.0, rhs[i]);
             now_val.clear();
             haveDot = false;
         }
@@ -176,10 +184,13 @@ QList<Element> infixExpressionSeperator(const QString &rhs)
         }
         else
             throw BadArgument();
+        cout << i;
     }
     ret << Element(now_val.toDouble(), QChar(0));
     if (bracketsDelta)
         throw BadArgument();
+    for (int i = 0; i < ret.size(); ++i)
+        cout << ret.at(i).op << ret.at(i).val << endl;
     return ret;
 }
 QList<Element> infixToSuffix(const QList<Element> &rhs)
@@ -221,6 +232,9 @@ double calculateSuffixExpression(const QList<Element> &rhs)
             double r = ns.pop();
             ns.push(calc2(r, l, rhs.at(i).op));
         }
+    while (!ns.isEmpty())
+        cout << ns.pop() << endl;
+
     if (ns.size() != 1)
         throw UnknownError();
     return ns.top();
